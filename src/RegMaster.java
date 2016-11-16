@@ -17,21 +17,13 @@ import org.apache.http.client.utils.URIBuilder;
 
 import java.net.URL;
 import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.Calendar;
 import java.util.Timer;
 
 import static javafx.geometry.Pos.*;
 
 public class RegMaster extends Application {
-
-    public final static String REG_TIME = "2016-11-15 13:26:00";
-    public final static int QTR_NUM = 1;
-    public final static int YEAR = 2017;
-    public final static String CW =
-            "ed58595ff0eb7e42a37bd7a7fb8b8467de55569961d60afdf93a2c5d43dd05cd";
-
 
     private static Label[] slnLabels = new Label[10];
     private static TextField[] slnTextFields = new TextField[10];
@@ -41,6 +33,56 @@ public class RegMaster extends Application {
 
     public static void main(String[] args) {
         launch(args);
+    }
+
+    private static URL getUrl() {
+        try {
+            URIBuilder builder = new URIBuilder("https://sdb.admin.uw" +
+                    ".edu/students/uwnetid/register.asp");
+            builder.addParameter("QTR", Integer.toString(getQuarterNumber()));
+            builder.addParameter("YR", yearTextField.getText());
+            builder.addParameter("INPUTFORM", "UPDATE");
+            builder.addParameter("PAC", "0");
+            builder.addParameter("MAXDROPS", "0");
+            builder.addParameter("_CW", cwTextField.getText());
+            for (int i = 0; i < 10; i++) {
+                builder.addParameter
+                        ("sln" + (i+1), slnTextFields[i].getText());
+                builder.addParameter
+                        ("entcode" + (i+1), "");
+                builder.addParameter
+                        ("credits" + (i+1), "");
+                builder.addParameter
+                        ("gr_sys" + (i+1), "");
+            }
+            return builder.build().toURL();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private static int getQuarterNumber() {
+        switch (quarterChoiceBox.getValue()) {
+            case "Wi":
+                return 1;
+            case "Sp":
+                return 2;
+            case "Su":
+                return 3;
+            case "Au":
+                return 4;
+            default:
+                return 0;
+        }
+    }
+
+    private static Calendar getToday() {
+        Calendar today = Calendar.getInstance();
+        today.set(Calendar.HOUR_OF_DAY, 17);
+        today.set(Calendar.MINUTE, 20);
+        today.set(Calendar.SECOND, 0);
+        return today;
     }
 
     @Override
@@ -86,14 +128,8 @@ public class RegMaster extends Application {
         hbAutoButton.getChildren().add(autoButton);
         grid.add(hbAutoButton, 0, 14);
         autoButton.setOnAction(event -> {
-            DateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            try {
-                Date date = dateFormatter.parse(REG_TIME);
-                Timer timer = new Timer();
-                timer.schedule(new RegisterTask(getUrl()), date);
-            } catch (ParseException e) {
-                e.printStackTrace();
-            }
+            Timer timer = new Timer();
+            timer.schedule(new RegisterTask(getUrl()), getToday().getTime());
         });
 
         Button goNowButton = new Button("Go now");
@@ -109,33 +145,5 @@ public class RegMaster extends Application {
         primaryStage.setScene(scene);
         primaryStage.show();
     }
-
-    private static URL getUrl() {
-        try {
-            URIBuilder builder = new URIBuilder("https://sdb.admin.uw" +
-                    ".edu/students/uwnetid/register.asp");
-            builder.addParameter("QTR", quarterChoiceBox.getValue());
-            builder.addParameter("YR", yearTextField.getText());
-            builder.addParameter("INPUTFORM", "UPDATE");
-            builder.addParameter("PAC", "0");
-            builder.addParameter("MAXDROPS", "0");
-            builder.addParameter("_CW", cwTextField.getText());
-            for (int i = 0; i < 10; i++) {
-                builder.addParameter
-                        ("sln" + (i+1), slnTextFields[i].getText());
-                builder.addParameter
-                        ("entcode" + (i+1), "");
-                builder.addParameter
-                        ("credits" + (i+1), "");
-                builder.addParameter
-                        ("gr_sys" + (i+1), "");
-            }
-            return builder.build().toURL();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
 
 }
