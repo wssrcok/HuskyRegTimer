@@ -16,8 +16,6 @@ import javafx.stage.Stage;
 import org.apache.http.client.utils.URIBuilder;
 
 import java.net.URL;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Timer;
 
@@ -30,6 +28,7 @@ public class RegMaster extends Application {
     private static TextField cwTextField;
     private static TextField yearTextField;
     private static ChoiceBox<String> quarterChoiceBox;
+    private static ChoiceBox<String> regTimeChoiceBox;
 
     public static void main(String[] args) {
         launch(args);
@@ -47,13 +46,13 @@ public class RegMaster extends Application {
             builder.addParameter("_CW", cwTextField.getText());
             for (int i = 0; i < 10; i++) {
                 builder.addParameter
-                        ("sln" + (i+1), slnTextFields[i].getText());
+                        ("sln" + (i + 1), slnTextFields[i].getText());
                 builder.addParameter
-                        ("entcode" + (i+1), "");
+                        ("entcode" + (i + 1), "");
                 builder.addParameter
-                        ("credits" + (i+1), "");
+                        ("credits" + (i + 1), "");
                 builder.addParameter
-                        ("gr_sys" + (i+1), "");
+                        ("gr_sys" + (i + 1), "");
             }
             return builder.build().toURL();
         } catch (Exception e) {
@@ -64,30 +63,29 @@ public class RegMaster extends Application {
 
     private static int getQuarterNumber() {
         switch (quarterChoiceBox.getValue()) {
-            case "Wi":
+            case "Winter":
                 return 1;
-            case "Sp":
+            case "Spring":
                 return 2;
-            case "Su":
+            case "Summer":
                 return 3;
-            case "Au":
+            case "Autumn":
                 return 4;
             default:
                 return 0;
         }
     }
 
-    private static Calendar getToday() {
-        Calendar today = Calendar.getInstance();
-        today.set(Calendar.HOUR_OF_DAY, 17);
-        today.set(Calendar.MINUTE, 20);
-        today.set(Calendar.SECOND, 0);
-        return today;
+    private static Calendar getRegTime() {
+        Calendar regTime = Calendar.getInstance();
+        int hour = Integer.parseInt(regTimeChoiceBox.getValue().split(":")[0]);
+        regTime.set(Calendar.HOUR_OF_DAY, hour);
+        regTime.set(Calendar.MINUTE, 0);
+        regTime.set(Calendar.SECOND, 0);
+        return regTime;
     }
 
-    @Override
-    public void start(Stage primaryStage) throws Exception {
-
+    private static void initGui(Stage primaryStage) {
         primaryStage.setTitle("UW Registration Master");
         GridPane grid = new GridPane();
         grid.setAlignment(CENTER);
@@ -95,55 +93,82 @@ public class RegMaster extends Application {
         grid.setVgap(10);
         grid.setPadding(new Insets(25, 25, 25, 25));
 
-        Text scenetitle = new Text("Reg Master");
-        scenetitle.setFont(Font.font(null, FontWeight.NORMAL, 20));
-        grid.add(scenetitle, 0, 0, 2, 1);
+        Text sceneTitleText = new Text("Reg Master");
+        sceneTitleText.setFont(Font.font(null, FontWeight.NORMAL, 20));
+        grid.add(sceneTitleText, 0, 0, 2, 1);
 
         quarterChoiceBox = new ChoiceBox<>(FXCollections
                 .observableArrayList(
-                "Wi", "Sp", "Su", "Au")
+                        "Winter", "Spring", "Summer", "Autumn")
         );
+        quarterChoiceBox.getSelectionModel().selectFirst();
         grid.add(quarterChoiceBox, 0, 1);
         yearTextField = new TextField("2017");
-        grid.add(yearTextField, 1, 1);
+        grid.add(yearTextField, 1, 1, 2, 1);
 
         Label cwLabel = new Label("CW");
         grid.add(cwLabel, 0, 2);
         cwTextField = new TextField();
-        grid.add(cwTextField, 1, 2);
+        cwTextField.focusedProperty().addListener(
+                (observable, oldValue, newValue) -> {
+                    if (!newValue) {
+                        System.out.println("Textfield out focus");
+                        cwTextField.setText(extractCwCode(cwTextField
+                                .getText()));
+                    }
+                });
+        grid.add(cwTextField, 1, 2, 2, 1);
 
         Label clock = new DigitalClock();
         grid.add(clock, 0, 3, 2, 1);
 
         for (int i = 0; i < 10; i++) {
-            slnLabels[i] = new Label("SLN " + (i+1));
-            grid.add(slnLabels[i], 0, i+4);
+            slnLabels[i] = new Label("SLN " + (i + 1));
+            grid.add(slnLabels[i], 0, i + 4);
             slnTextFields[i] = new TextField();
-            grid.add(slnTextFields[i], 1, i+4);
+            grid.add(slnTextFields[i], 1, i + 4, 2, 1);
         }
 
         Button autoButton = new Button("Auto");
         HBox hbAutoButton = new HBox(10);
         hbAutoButton.setAlignment(Pos.BOTTOM_RIGHT);
         hbAutoButton.getChildren().add(autoButton);
-        grid.add(hbAutoButton, 0, 14);
+        grid.add(hbAutoButton, 1, 14);
         autoButton.setOnAction(event -> {
             Timer timer = new Timer();
-            timer.schedule(new RegisterTask(getUrl()), getToday().getTime());
+            timer.schedule(new RegisterTask(getUrl()), getRegTime().getTime());
         });
+
+        regTimeChoiceBox = new ChoiceBox<>(FXCollections
+                .observableArrayList("6:00", "0:00")
+        );
+        regTimeChoiceBox.getSelectionModel().selectFirst();
+        grid.add(regTimeChoiceBox, 2, 14);
 
         Button goNowButton = new Button("Go now");
         HBox hbGoNowButton = new HBox(10);
         hbGoNowButton.setAlignment(Pos.BOTTOM_RIGHT);
         hbGoNowButton.getChildren().add(goNowButton);
-        goNowButton.setOnAction(event -> {
-            RegisterTask.openWebpage(getUrl());
-        });
-        grid.add(hbGoNowButton, 1, 14);
+        goNowButton.setOnAction(event -> RegisterTask.openWebpage(getUrl()));
+        grid.add(hbGoNowButton, 0, 14);
 
         Scene scene = new Scene(grid, 300, 600);
         primaryStage.setScene(scene);
         primaryStage.show();
+    }
+
+    private static String extractCwCode(String raw) {
+        if (raw.startsWith("http")) {
+            String result = raw.split("&")[3].substring(4);
+            System.out.println(result);
+            return result;
+        }
+        return raw;
+    }
+
+    @Override
+    public void start(Stage primaryStage) throws Exception {
+        initGui(primaryStage);
     }
 
 }

@@ -17,9 +17,9 @@ class DigitalClock extends Label {
                 new KeyFrame(Duration.seconds(0),
                         actionEvent -> {
                             Calendar time = Calendar.getInstance();
-                            String hourString = StringUtilities.pad(2, ' ', time.get(Calendar.HOUR) == 0 ? "12" : time.get(Calendar.HOUR) + "");
-                            String minuteString = StringUtilities.pad(2, '0', time.get(Calendar.MINUTE) + "");
-                            String secondString = StringUtilities.pad(2, '0', time.get(Calendar.SECOND) + "");
+                            String hourString = pad(2, ' ', time.get(Calendar.HOUR) == 0 ? "12" : time.get(Calendar.HOUR) + "");
+                            String minuteString = pad(2, '0', time.get(Calendar.MINUTE) + "");
+                            String secondString = pad(2, '0', time.get(Calendar.SECOND) + "");
                             String ampmString = time.get(Calendar.AM_PM) == Calendar.AM ? "AM" : "PM";
                             setText("Current time: " + hourString + ":" +
                                     minuteString + ":" + secondString + " " + ampmString);
@@ -29,5 +29,16 @@ class DigitalClock extends Label {
         );
         timeline.setCycleCount(Animation.INDEFINITE);
         timeline.play();
+    }
+
+
+    private static String pad(int fieldWidth, char padChar, String s) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = s.length(); i < fieldWidth; i++) {
+            sb.append(padChar);
+        }
+        sb.append(s);
+
+        return sb.toString();
     }
 }

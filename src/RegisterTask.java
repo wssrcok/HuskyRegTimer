@@ -17,9 +17,8 @@ public class RegisterTask extends TimerTask {
         openWebpage(this.url);
     }
 
-    public static void openWebpage(URI uri) {
+    private static void openWebpage(URI uri) {
         Desktop desktop = Desktop.isDesktopSupported() ? Desktop.getDesktop() : null;
-        System.out.println(desktop==null);
         if (desktop != null && desktop.isSupported(Desktop.Action.BROWSE)) {
             try {
                 desktop.browse(uri);
