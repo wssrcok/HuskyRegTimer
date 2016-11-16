@@ -22,9 +22,16 @@ import java.util.Date;
 import java.util.Timer;
 
 import static java.util.Calendar.DATE;
-import static javafx.geometry.Pos.*;
+import static javafx.geometry.Pos.CENTER;
 
 public class RegMaster extends Application {
+
+    private static final ObservableList<String> REG_TIME_LIST = FXCollections
+            .observableArrayList("6:00", "0:00");
+    private static final ObservableList<String> QTR_LIST = FXCollections
+            .observableArrayList("Winter", "Spring", "Summer", "Autumn");
+    private static final String GO_NOW_COLOR = "#6600cc";
+    private static final String AUTO_COLOR = "#ffcc33";
 
     private static Label[] slnLabels = new Label[10];
     private static TextField[] slnTextFields = new TextField[10];
@@ -34,12 +41,6 @@ public class RegMaster extends Application {
     private static ChoiceBox<String> regTimeChoiceBox;
     private static Label regTimeLabel;
     private static Timer timer;
-
-    private static final ObservableList<String> REG_TIME_LIST = FXCollections
-            .observableArrayList("6:00", "0:00");
-
-    private static final ObservableList<String> QTR_LIST = FXCollections
-            .observableArrayList("Winter", "Spring", "Summer", "Autumn");
 
     public static void main(String[] args) {
         launch(args);
@@ -83,18 +84,7 @@ public class RegMaster extends Application {
     }
 
     private static int getQuarterNumber() {
-        switch (quarterChoiceBox.getValue()) {
-            case "Winter":
-                return 1;
-            case "Spring":
-                return 2;
-            case "Summer":
-                return 3;
-            case "Autumn":
-                return 4;
-            default:
-                return 0;
-        }
+        return quarterChoiceBox.getSelectionModel().getSelectedIndex() + 1;
     }
 
     private static Calendar getRegTime() {
@@ -119,7 +109,7 @@ public class RegMaster extends Application {
         grid.setVgap(10);
         grid.setPadding(new Insets(10, 10, 10, 10));
 
-        Text sceneTitleText = new Text("Registration");
+        Text sceneTitleText = new Text("UW Registration");
         sceneTitleText.setFont(Font.font(null, FontWeight.NORMAL, 20));
         grid.add(sceneTitleText, 0, 0, 2, 1);
 
@@ -135,7 +125,7 @@ public class RegMaster extends Application {
         cwTextField.focusedProperty().addListener(
                 (observable, oldValue, newValue) -> {
                     if (!newValue) {
-                        cwTextField.setText(extractCwCode(cwTextField
+                        cwTextField.setText(getCwFromUrl(cwTextField
                                 .getText()));
                     }
                 });
@@ -154,7 +144,7 @@ public class RegMaster extends Application {
         }
 
         Button autoButton = new Button("Auto");
-        autoButton.setStyle("-fx-base: #ffcc33;");
+        autoButton.setStyle("-fx-base: " + AUTO_COLOR + ";");
         autoButton.setOnAction(event -> timedReg());
         HBox hbAutoButton = new HBox(10);
         hbAutoButton.setAlignment(Pos.BOTTOM_RIGHT);
@@ -170,7 +160,7 @@ public class RegMaster extends Application {
         hbGoNowButton.setAlignment(Pos.BOTTOM_RIGHT);
         hbGoNowButton.getChildren().add(goNowButton);
         goNowButton.setOnAction(event -> RegisterTask.openWebpage(getUrl()));
-        goNowButton.setStyle("-fx-base: #9900cc;");
+        goNowButton.setStyle("-fx-base: " + GO_NOW_COLOR + ";");
         grid.add(hbGoNowButton, 0, 14);
 
         regTimeLabel = new Label();
@@ -181,7 +171,7 @@ public class RegMaster extends Application {
         primaryStage.show();
     }
 
-    private static String extractCwCode(String raw) {
+    private static String getCwFromUrl(String raw) {
         String result;
         if (raw.startsWith("http")) {
             result = raw.split("&")[3].substring(4);
