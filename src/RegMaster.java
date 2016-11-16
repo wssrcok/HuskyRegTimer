@@ -1,5 +1,6 @@
 import javafx.application.Application;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -17,8 +18,10 @@ import org.apache.http.client.utils.URIBuilder;
 
 import java.net.URL;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.Timer;
 
+import static java.util.Calendar.DATE;
 import static javafx.geometry.Pos.*;
 
 public class RegMaster extends Application {
@@ -29,9 +32,27 @@ public class RegMaster extends Application {
     private static TextField yearTextField;
     private static ChoiceBox<String> quarterChoiceBox;
     private static ChoiceBox<String> regTimeChoiceBox;
+    private static Label regTimeLabel;
+    private static Timer timer;
+
+    private static final ObservableList<String> REG_TIME_LIST = FXCollections
+            .observableArrayList("6:00", "0:00");
+
+    private static final ObservableList<String> QTR_LIST = FXCollections
+            .observableArrayList("Winter", "Spring", "Summer", "Autumn");
 
     public static void main(String[] args) {
         launch(args);
+    }
+
+    private static void timedReg() {
+        if (timer != null) {
+            timer.cancel();
+        }
+        timer = new Timer();
+        Date regTime = getRegTime().getTime();
+        timer.schedule(new RegisterTask(getUrl()), regTime);
+        regTimeLabel.setText("Sched: " + regTime.toString());
     }
 
     private static URL getUrl() {
@@ -46,7 +67,7 @@ public class RegMaster extends Application {
             builder.addParameter("_CW", cwTextField.getText());
             for (int i = 0; i < 10; i++) {
                 builder.addParameter
-                        ("sln" + (i + 1), slnTextFields[i].getText());
+                        ("sln" + (i + 1), slnTextFields[i].getText().trim());
                 builder.addParameter
                         ("entcode" + (i + 1), "");
                 builder.addParameter
@@ -78,10 +99,15 @@ public class RegMaster extends Application {
 
     private static Calendar getRegTime() {
         Calendar regTime = Calendar.getInstance();
-        int hour = Integer.parseInt(regTimeChoiceBox.getValue().split(":")[0]);
+        String[] timeSelected = regTimeChoiceBox.getValue().split(":");
+        int hour = Integer.parseInt(timeSelected[0]);
+        int minute = Integer.parseInt(timeSelected[1]);
         regTime.set(Calendar.HOUR_OF_DAY, hour);
-        regTime.set(Calendar.MINUTE, 0);
+        regTime.set(Calendar.MINUTE, minute);
         regTime.set(Calendar.SECOND, 0);
+        if (Calendar.getInstance().compareTo(regTime) > 0) {
+            regTime.add(DATE, 1);
+        }
         return regTime;
     }
 
@@ -93,14 +119,11 @@ public class RegMaster extends Application {
         grid.setVgap(10);
         grid.setPadding(new Insets(10, 10, 10, 10));
 
-        Text sceneTitleText = new Text("Reg Master");
+        Text sceneTitleText = new Text("Registration");
         sceneTitleText.setFont(Font.font(null, FontWeight.NORMAL, 20));
         grid.add(sceneTitleText, 0, 0, 2, 1);
 
-        quarterChoiceBox = new ChoiceBox<>(FXCollections
-                .observableArrayList(
-                        "Winter", "Spring", "Summer", "Autumn")
-        );
+        quarterChoiceBox = new ChoiceBox<>(QTR_LIST);
         quarterChoiceBox.getSelectionModel().selectFirst();
         grid.add(quarterChoiceBox, 0, 1);
         yearTextField = new TextField("2017");
@@ -112,7 +135,6 @@ public class RegMaster extends Application {
         cwTextField.focusedProperty().addListener(
                 (observable, oldValue, newValue) -> {
                     if (!newValue) {
-                        System.out.println("Textfield out focus");
                         cwTextField.setText(extractCwCode(cwTextField
                                 .getText()));
                     }
@@ -132,18 +154,14 @@ public class RegMaster extends Application {
         }
 
         Button autoButton = new Button("Auto");
+        autoButton.setStyle("-fx-base: #ffcc33;");
+        autoButton.setOnAction(event -> timedReg());
         HBox hbAutoButton = new HBox(10);
         hbAutoButton.setAlignment(Pos.BOTTOM_RIGHT);
         hbAutoButton.getChildren().add(autoButton);
         grid.add(hbAutoButton, 1, 14);
-        autoButton.setOnAction(event -> {
-            Timer timer = new Timer();
-            timer.schedule(new RegisterTask(getUrl()), getRegTime().getTime());
-        });
 
-        regTimeChoiceBox = new ChoiceBox<>(FXCollections
-                .observableArrayList("6:00", "0:00")
-        );
+        regTimeChoiceBox = new ChoiceBox<>(REG_TIME_LIST);
         regTimeChoiceBox.getSelectionModel().selectFirst();
         grid.add(regTimeChoiceBox, 2, 14);
 
@@ -152,9 +170,13 @@ public class RegMaster extends Application {
         hbGoNowButton.setAlignment(Pos.BOTTOM_RIGHT);
         hbGoNowButton.getChildren().add(goNowButton);
         goNowButton.setOnAction(event -> RegisterTask.openWebpage(getUrl()));
+        goNowButton.setStyle("-fx-base: #9900cc;");
         grid.add(hbGoNowButton, 0, 14);
 
-        Scene scene = new Scene(grid, 300, 600);
+        regTimeLabel = new Label();
+        grid.add(regTimeLabel, 0, 15, 3, 1);
+
+        Scene scene = new Scene(grid, 270, 550);
         primaryStage.setScene(scene);
         primaryStage.show();
     }
@@ -166,6 +188,7 @@ public class RegMaster extends Application {
         } else {
             result = raw;
         }
+        System.out.println(result);
         return result.trim();
     }
 
