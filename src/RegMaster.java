@@ -91,7 +91,7 @@ public class RegMaster extends Application {
         grid.setAlignment(CENTER);
         grid.setHgap(10);
         grid.setVgap(10);
-        grid.setPadding(new Insets(25, 25, 25, 25));
+        grid.setPadding(new Insets(10, 10, 10, 10));
 
         Text sceneTitleText = new Text("Reg Master");
         sceneTitleText.setFont(Font.font(null, FontWeight.NORMAL, 20));
@@ -117,6 +117,7 @@ public class RegMaster extends Application {
                                 .getText()));
                     }
                 });
+        cwTextField.setPromptText("Copy url from MyPlan");
         grid.add(cwTextField, 1, 2, 2, 1);
 
         Label clock = new DigitalClock();
@@ -126,6 +127,7 @@ public class RegMaster extends Application {
             slnLabels[i] = new Label("SLN " + (i + 1));
             grid.add(slnLabels[i], 0, i + 4);
             slnTextFields[i] = new TextField();
+            slnTextFields[i].setPromptText("5 digit SLN");
             grid.add(slnTextFields[i], 1, i + 4, 2, 1);
         }
 
@@ -158,12 +160,13 @@ public class RegMaster extends Application {
     }
 
     private static String extractCwCode(String raw) {
+        String result;
         if (raw.startsWith("http")) {
-            String result = raw.split("&")[3].substring(4);
-            System.out.println(result);
-            return result;
+            result = raw.split("&")[3].substring(4);
+        } else {
+            result = raw;
         }
-        return raw;
+        return result.trim();
     }
 
     @Override
